@@ -1,0 +1,39 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- .NET 10 is the current LTS release (supported until November 2028). -->
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      Single source of truth for the SDK version. FacturamaClient.Version and the User-Agent
+      are derived from it, and the release workflow requires the pushed tag to be `v` + this value.
+      Keep it in sync with CHANGELOG.md.
+    -->
+    <Version>1.0.0</Version>
+    <Authors>Facturama</Authors>
+    <Company>Facturama</Company>
+    <Copyright>Copyright (c) Facturama</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://www.api.facturama.com.mx/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/lumiere11/facturama-dotnet-sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>facturama;cfdi;sat;mexico;invoicing;factura;api;sdk</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

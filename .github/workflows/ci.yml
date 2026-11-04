@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  tests:
+    name: tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Restore
+        run: dotnet restore Facturama.slnx
+      - name: Build (analyzers and warnings as errors)
+        run: dotnet build Facturama.slnx --no-restore -c Release
+      - name: Offline tests
+        run: dotnet test Facturama.slnx --no-build -c Release --filter "Category!=Live"
+      - name: Code style
+        if: matrix.os == 'ubuntu-latest'
+        run: dotnet format Facturama.slnx --verify-no-changes --no-restore
+      - name: Pack
+        if: matrix.os == 'ubuntu-latest'
+        run: dotnet pack Facturama.slnx --no-build -c Release -o artifacts
+
+  # Calls the real Facturama Sandbox, so it needs a valid account stored in the
+  # repository secrets FACTURAMA_SANDBOX_USER / FACTURAMA_SANDBOX_PASSWORD.
+  # Without them (or when the Sandbox is down) it is skipped / non-blocking.
+  live:
+    name: live Sandbox catalogs
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      FACTURAMA_SANDBOX_USER: ${{ secrets.FACTURAMA_SANDBOX_USER }}
+      FACTURAMA_SANDBOX_PASSWORD: ${{ secrets.FACTURAMA_SANDBOX_PASSWORD }}
+    steps:
+      - name: Check credentials
+        id: creds
+        run: echo "present=${{ env.FACTURAMA_SANDBOX_USER != '' && env.FACTURAMA_SANDBOX_PASSWORD != '' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.creds.outputs.present == 'true'
+      - uses: actions/setup-dotnet@v4
+        if: steps.creds.outputs.present == 'true'
+        with:
+          global-json-file: global.json
+      - if: steps.creds.outputs.present == 'true'
+        run: dotnet test Facturama.slnx -c Release --filter "Category=Live"
