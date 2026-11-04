@@ -1,0 +1,30 @@
+root = true
+
+[*]
+end_of_line = lf
+charset = utf-8
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{md,yml,yaml,json,csproj,props,slnx}]
+indent_size = 2
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_prefer_braces = true:warning
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_property = false:warning
+
+# Public XML docs are required on the API surface (catalog entries are documented at class level).
+dotnet_diagnostic.CS1591.severity = warning
+# The SDK is a library: awaiting without capturing the context is intentional.
+dotnet_diagnostic.CA2007.severity = none
+# Catalog data is user-facing Spanish text and uses invariant, ordinal comparisons on purpose.
+dotnet_diagnostic.CA1707.severity = none

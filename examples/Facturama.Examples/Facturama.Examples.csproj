@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Facturama/Facturama.csproj" />
+    <ProjectReference Include="../../src/Facturama.Extensions.DependencyInjection/Facturama.Extensions.DependencyInjection.csproj" />
+  </ItemGroup>
+
+</Project>

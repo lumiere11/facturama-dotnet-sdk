@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Facturama/Facturama.csproj" />
+    <Project Path="src/Facturama.Extensions.DependencyInjection/Facturama.Extensions.DependencyInjection.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Facturama.Tests/Facturama.Tests.csproj" />
+  </Folder>
+  <Folder Name="/examples/">
+    <Project Path="examples/Facturama.Examples/Facturama.Examples.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="CHANGELOG.md" />
+    <File Path="README.md" />
+    <File Path="README-en.md" />
+    <File Path="CLAUDE.md" />
+  </Folder>
+</Solution>

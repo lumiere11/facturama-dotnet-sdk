@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Facturama.Sdk.Extensions.DependencyInjection</PackageId>
+    <RootNamespace>Facturama.Extensions.DependencyInjection</RootNamespace>
+    <Description>Microsoft.Extensions.DependencyInjection integration for the Facturama SDK (AddFacturama, ASP.NET Core and Generic Host).</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <ProjectReference Include="../Facturama/Facturama.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+</Project>

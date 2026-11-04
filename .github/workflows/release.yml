@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Tag must match the Version in Directory.Build.props
+        run: |
+          VERSION=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props | head -n1)
+          test "v${VERSION}" = "${GITHUB_REF_NAME}" || { echo "Tag ${GITHUB_REF_NAME} != Version v${VERSION}"; exit 1; }
+      - run: dotnet restore Facturama.slnx
+      - run: dotnet build Facturama.slnx --no-restore -c Release
+      - run: dotnet test Facturama.slnx --no-build -c Release --filter "Category!=Live"
+      - run: dotnet pack Facturama.slnx --no-build -c Release -o artifacts
+      - name: Publish to NuGet
+        # Needs the repository secret NUGET_API_KEY; skipped (the GitHub release is still created) without it.
+        if: ${{ env.NUGET_API_KEY != '' }}
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.nupkg artifacts/*.snupkg --title "${GITHUB_REF_NAME}" --generate-notes
