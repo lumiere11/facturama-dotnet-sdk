@@ -123,6 +123,18 @@ public sealed class FacturamaClient : IDisposable
     /// <summary>Gets the CRUD operations for the account's products.</summary>
     public Products Products => field ??= new Products(this);
 
+    /// <summary>Gets the CRUD operations for the account's branch offices.</summary>
+    public BranchOffices BranchOffices => field ??= new BranchOffices(this);
+
+    /// <summary>Gets the operations for the series of a branch office.</summary>
+    public Series Series => field ??= new Series(this);
+
+    /// <summary>Gets the account's fiscal profile: tax data, CSD, FIEL and logo.</summary>
+    public TaxEntity TaxEntity => field ??= new TaxEntity(this);
+
+    /// <summary>Gets the operations for withholding CFDIs (retenciones).</summary>
+    public Retentions Retentions => field ??= new Retentions(this);
+
     /// <summary>Gets the Multi-issuer API (<c>api-lite</c>): CFDIs and CSDs of several issuers.</summary>
     public Multiissuer Multiissuer => field ??= new Multiissuer(this);
 

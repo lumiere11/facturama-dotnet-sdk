@@ -21,7 +21,7 @@
       are derived from it, and the release workflow requires the pushed tag to be `v` + this value.
       Keep it in sync with CHANGELOG.md.
     -->
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Facturama</Authors>
     <Company>Facturama</Company>
     <Copyright>Copyright (c) Facturama</Copyright>
@@ -30,6 +30,10 @@
     <RepositoryUrl>https://github.com/lumiere11/facturama-dotnet-sdk</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>facturama;cfdi;sat;mexico;invoicing;factura;api;sdk</PackageTags>
+    <PackageReleaseNotes>https://github.com/lumiere11/facturama-dotnet-sdk/releases/tag/v$(Version)</PackageReleaseNotes>
+    <!-- Source Link: lets debuggers step into the SDK sources straight from GitHub. -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">

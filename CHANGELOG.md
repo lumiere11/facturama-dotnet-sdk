@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
 ### Added
+- Web API resources: `client.BranchOffices` (CRUD), `client.Series` (series of a branch office), `client.TaxEntity` (fiscal profile, `UploadCsdAsync`/`UploadCsdFromFilesAsync`, `UploadFielAsync`, `UploadLogoAsync`) and `client.Retentions` (withholding CFDIs: `CreateAsync`, `FindAsync`, `CancelAsync`).
+- `Cfdis.FindAsync()` (one CFDI) and `Cfdis.StatusAsync()` (the status of a CFDI at the SAT).
+- Offline SAT catalogs `FiscalRegime`, `CancellationMotive`, `TaxObject`, `Exportation` and `Periodicity`.
+- The GitHub release of a version is described by its section of this changelog; the NuGet packages link to it (`PackageReleaseNotes`) and publish their repository for Source Link.
 - Multi-issuer API resources: `client.Multiissuer.Cfdis` (`CreateAsync`, `FindAsync`, `ListAsync`, `DownloadAsync`, `SendByEmailAsync`, `CancelAsync`) and `client.Multiissuer.Csds` (`ListAsync`, `FindAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, plus `CreateFromFilesAsync`/`UpdateFromFilesAsync`, which read and base64-encode the `.cer` and `.key` files).
 - `DownloadBytesAsync()` and `DownloadToFileAsync()` on `Cfdis` and `Multiissuer.Cfdis`: the decoded file instead of the JSON with the base64 `Content`. A response without a valid `Content` raises `ResponseException`.
 - `ReceiptTypes.IssuedLite` (`issuedLite`), the type of the CFDIs issued through the Multi-issuer API.

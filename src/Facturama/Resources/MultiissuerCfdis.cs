@@ -67,7 +67,7 @@ public sealed class MultiissuerCfdis
 
     /// <summary>Cancels a CFDI (<c>DELETE api-lite/cfdis/{id}</c>).</summary>
     /// <param name="id">The CFDI id.</param>
-    /// <param name="motive">The SAT cancellation motive (<c>01</c> to <c>04</c>).</param>
+    /// <param name="motive">The SAT cancellation motive (see <see cref="Model.Catalog.CancellationMotive"/>).</param>
     /// <param name="substitutionUuid">The UUID of the replacing CFDI; required for motive <c>01</c>.</param>
     /// <param name="cancellationToken">A token to cancel the request.</param>
     /// <returns>The cancellation acknowledgement.</returns>

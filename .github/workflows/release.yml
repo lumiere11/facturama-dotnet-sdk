@@ -29,7 +29,22 @@ jobs:
         # Needs the repository secret NUGET_API_KEY; skipped (the GitHub release is still created) without it.
         if: ${{ env.NUGET_API_KEY != '' }}
         run: dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Release description from CHANGELOG.md
+        # The "## <version>" section of the changelog becomes the description of the GitHub release.
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v version="$VERSION" '/^## /{found = ($2 == version); next} found' CHANGELOG.md > release-notes.md
+          grep -q '[^[:space:]]' release-notes.md || { echo "CHANGELOG.md has no \"## ${VERSION}\" section"; exit 1; }
+          {
+            echo
+            echo "## Install"
+            echo
+            echo '```sh'
+            echo "dotnet add package Facturama.Sdk --version ${VERSION}"
+            echo "dotnet add package Facturama.Sdk.Extensions.DependencyInjection --version ${VERSION}"
+            echo '```'
+          } >> release-notes.md
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.nupkg artifacts/*.snupkg --title "${GITHUB_REF_NAME}" --generate-notes
+        run: gh release create "${GITHUB_REF_NAME}" artifacts/*.nupkg artifacts/*.snupkg --title "${GITHUB_REF_NAME}" --notes-file release-notes.md --generate-notes

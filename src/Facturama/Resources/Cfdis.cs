@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace Facturama.Resources;
@@ -15,6 +16,36 @@ public sealed class Cfdis
     /// <returns>The stamped CFDI.</returns>
     public Task<JsonNode?> CreateAsync(object cfdi, CancellationToken cancellationToken = default)
         => _client.PostAsync("3/cfdis", cfdi, cancellationToken: cancellationToken);
+
+    /// <summary>Gets one CFDI (<c>GET Cfdi/{id}</c>).</summary>
+    /// <param name="id">The CFDI id.</param>
+    /// <param name="type">One of <see cref="ReceiptTypes"/>; issued by default.</param>
+    /// <param name="cancellationToken">A token to cancel the request.</param>
+    /// <returns>The CFDI.</returns>
+    public Task<JsonNode?> FindAsync(string id, string type = ReceiptTypes.Issued, CancellationToken cancellationToken = default)
+        => _client.GetAsync($"Cfdi/{Uri.EscapeDataString(id)}", new Dictionary<string, object?> { ["type"] = type }, cancellationToken);
+
+    /// <summary>
+    /// Asks the SAT for the status of a CFDI, issued through Facturama or not (<c>GET cfdi/status</c>).
+    /// In production every call consumes one folio; the Sandbox answers with simulated data.
+    /// </summary>
+    /// <param name="uuid">The fiscal folio (UUID) of the CFDI.</param>
+    /// <param name="issuerRfc">The issuer's RFC.</param>
+    /// <param name="receiverRfc">The receiver's RFC.</param>
+    /// <param name="total">The CFDI total, taxes included; sent with two decimals.</param>
+    /// <param name="cancellationToken">A token to cancel the request.</param>
+    /// <returns>The status reported by the SAT.</returns>
+    public Task<JsonNode?> StatusAsync(string uuid, string issuerRfc, string receiverRfc, decimal total, CancellationToken cancellationToken = default)
+        => _client.GetAsync(
+            "cfdi/status",
+            new Dictionary<string, object?>
+            {
+                ["uuid"] = uuid,
+                ["issuerRfc"] = issuerRfc,
+                ["receiverRfc"] = receiverRfc,
+                ["total"] = total.ToString("0.00", CultureInfo.InvariantCulture),
+            },
+            cancellationToken);
 
     /// <summary>Lists CFDIs (<c>GET Cfdi</c>).</summary>
     /// <param name="filters">API query parameters (<c>type</c>, <c>folioStart</c>, <c>rfc</c>, <c>page</c>, ...). <c>type</c> defaults to <see cref="ReceiptTypes.Issued"/>.</param>
@@ -79,7 +110,7 @@ public sealed class Cfdis
 
     /// <summary>Cancels a CFDI (<c>DELETE Cfdi/{id}</c>).</summary>
     /// <param name="id">The CFDI id.</param>
-    /// <param name="motive">The SAT cancellation motive (<c>01</c> to <c>04</c>).</param>
+    /// <param name="motive">The SAT cancellation motive (see <see cref="Model.Catalog.CancellationMotive"/>).</param>
     /// <param name="type">One of <see cref="ReceiptTypes"/>; issued by default.</param>
     /// <param name="substitutionUuid">The UUID of the replacing CFDI; required for motive <c>01</c>.</param>
     /// <param name="cancellationToken">A token to cancel the request.</param>

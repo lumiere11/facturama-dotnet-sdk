@@ -145,9 +145,13 @@ app.MapGet("/invoices/{id}/pdf", async (string id, FacturamaClient facturama, Ca
 
 | Recurso | Métodos |
 |---|---|
-| `Cfdis` | `CreateAsync(cfdi)`, `ListAsync(filters)`, `DownloadAsync(id, format, type)`, `DownloadBytesAsync(id, format, type)`, `DownloadToFileAsync(id, path, format, type)`, `SendByEmailAsync(id, email)`, `CancelAsync(id, motive)` |
+| `Cfdis` | `CreateAsync(cfdi)`, `FindAsync(id, type)`, `StatusAsync(uuid, issuerRfc, receiverRfc, total)`, `ListAsync(filters)`, `DownloadAsync(id, format, type)`, `DownloadBytesAsync(id, format, type)`, `DownloadToFileAsync(id, path, format, type)`, `SendByEmailAsync(id, email)`, `CancelAsync(id, motive)` |
 | `Clients` | `ListAsync()`, `FindAsync(id)`, `CreateAsync(data)`, `UpdateAsync(id, data)`, `DeleteAsync(id)` |
 | `Products` | `ListAsync()`, `FindAsync(id)`, `CreateAsync(data)`, `UpdateAsync(id, data)`, `DeleteAsync(id)` |
+| `BranchOffices` | `ListAsync()`, `FindAsync(id)`, `CreateAsync(data)`, `UpdateAsync(id, data)`, `DeleteAsync(id)` |
+| `Series` | `ListAsync(branchOfficeId)`, `FindAsync(branchOfficeId, name)`, `CreateAsync(branchOfficeId, data)`, `UpdateAsync(branchOfficeId, name, data)`, `DeleteAsync(branchOfficeId, name)` |
+| `TaxEntity` | `FindAsync()`, `UpdateAsync(data)`, `UploadCsdAsync(data)`, `UploadCsdFromFilesAsync(cer, key, password)`, `UploadFielAsync(data)`, `UploadLogoAsync(data)` |
+| `Retentions` | `CreateAsync(retention)`, `FindAsync(id)`, `CancelAsync(id, motive)` |
 | `Multiissuer.Cfdis` | `CreateAsync(cfdi)`, `FindAsync(id)`, `ListAsync(filters)`, `DownloadAsync(id, format)`, `DownloadBytesAsync(id, format)`, `DownloadToFileAsync(id, path, format)`, `SendByEmailAsync(id, email)`, `CancelAsync(id, motive)` |
 | `Multiissuer.Csds` | `ListAsync()`, `FindAsync(rfc)`, `CreateAsync(data)`, `CreateFromFilesAsync(rfc, cer, key, password)`, `UpdateAsync(rfc, data)`, `UpdateFromFilesAsync(rfc, cer, key, password)`, `DeleteAsync(rfc)` |
 
@@ -176,7 +180,7 @@ El proyecto de pruebas de este repositorio (`tests/Facturama.Tests/Support/StubH
 
 ## Catálogos locales
 
-`Facturama.Model.Catalog` incluye copias estáticas de los catálogos del SAT/Facturama: `CfdiType`, `CfdiUse`, `FederalTax`, `PaymentForm` y `PaymentMethod`. Cada uno expone `Entries`, `FindByName()`, `FindByValue()` y `FindAllByValue()`; `States` tiene los estados.
+`Facturama.Model.Catalog` incluye copias estáticas de los catálogos del SAT/Facturama: `CfdiType`, `CfdiUse`, `FederalTax`, `PaymentForm`, `PaymentMethod`, `FiscalRegime`, `CancellationMotive`, `TaxObject`, `Exportation` y `Periodicity`. Cada uno expone `Entries`, `FindByName()`, `FindByValue()` y `FindAllByValue()`; `States` tiene los estados.
 
 ```csharp
 using Facturama.Model.Catalog;
@@ -184,6 +188,9 @@ using Facturama.Model.Catalog;
 string uso = CfdiUse.GeneralExpenses.Value;           // "G03"
 string metodo = PaymentMethod.FindByName("Pago en una sola exhibición").Value;  // "PUE"
 bool soloFisicas = !CfdiUse.FindByValue("CN01").Moral;
+string regimen = FiscalRegime.SimplifiedTrust.Value;  // "626"
+
+await facturama.Cfdis.CancelAsync(id, CancellationMotive.ErrorsWithoutRelation.Value);  // "02"
 ```
 
 ## API Web
@@ -195,9 +202,10 @@ bool soloFisicas = !CfdiUse.FindByValue("CN01").Moral;
 ### Operaciones
 
 - Crear, consultar y cancelar CFDIs; descargar XML y PDF y enviarlos por correo;
-- Consultar perfil y suscripción actual;
-- Cargar logotipo y certificados digitales;
-- CRUD de productos, clientes, sucursales y series.
+- Consultar el estado de un CFDI ante el SAT (`facturama.Cfdis.StatusAsync`);
+- Consultar y actualizar el perfil fiscal; cargar logotipo, CSD y FIEL (`facturama.TaxEntity`);
+- CRUD de productos, clientes, sucursales y series (`facturama.Products`, `Clients`, `BranchOffices`, `Series`);
+- Crear, consultar y cancelar CFDIs de retenciones (`facturama.Retentions`).
 
 ## API Multiemisor
 
@@ -238,6 +246,13 @@ dotnet format Facturama.slnx --verify-no-changes       # estilo
 ```
 
 Las pruebas `Category=Live` comparan los catálogos locales con el Sandbox y se omiten si no defines `FACTURAMA_SANDBOX_USER` y `FACTURAMA_SANDBOX_PASSWORD`.
+
+### Publicar una versión
+
+1. Sube `<Version>` en `Directory.Build.props` y añade su sección `## x.y.z` en `CHANGELOG.md`.
+2. Crea y sube la etiqueta `vx.y.z` (debe coincidir con `<Version>`).
+
+El workflow `release.yml` compila, prueba, empaqueta `Facturama.Sdk` y `Facturama.Sdk.Extensions.DependencyInjection`, los publica en [NuGet](https://www.nuget.org/packages/Facturama.Sdk) si existe el secreto `NUGET_API_KEY`, y crea el *release* de GitHub usando esa sección del changelog como descripción.
 
 ## ¡Quiero contribuir!
 

@@ -295,6 +295,155 @@ public sealed class ResourcesTests
     }
 
     [Fact]
+    public async Task CfdiFind()
+    {
+        using FacturamaClient client = CreateClient();
+
+        await client.Cfdis.FindAsync("abc");
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/Cfdi/abc", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("?type=issued", _handler.Last.Uri.Query);
+
+        await client.Cfdis.FindAsync("abc", ReceiptTypes.Received);
+        Assert.Equal("?type=received", _handler.Last.Uri.Query);
+    }
+
+    [Fact]
+    public async Task CfdiStatusSendsTheTotalWithTwoDecimals()
+    {
+        using FacturamaClient client = CreateClient();
+
+        await client.Cfdis.StatusAsync("UUID-1", "EKU9003173C9", "URE180429TM6", 116m);
+
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/cfdi/status", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("?uuid=UUID-1&issuerRfc=EKU9003173C9&receiverRfc=URE180429TM6&total=116.00", _handler.Last.Uri.Query);
+    }
+
+    [Fact]
+    public Task BranchOfficesCrudRequests()
+    {
+        FacturamaClient client = CreateClient();
+
+        return AssertCrudAsync(
+            "BranchOffice",
+            "BranchOffice",
+            new Crud(
+                () => client.BranchOffices.ListAsync(),
+                id => client.BranchOffices.FindAsync(id),
+                data => client.BranchOffices.CreateAsync(data),
+                (id, data) => client.BranchOffices.UpdateAsync(id, data),
+                id => client.BranchOffices.DeleteAsync(id)),
+            listQuery: string.Empty);
+    }
+
+    [Fact]
+    public async Task SeriesRequests()
+    {
+        using FacturamaClient client = CreateClient();
+        var payload = new { Name = "A" };
+
+        await client.Series.ListAsync("b1");
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/Serie/b1", _handler.Last.Uri.AbsolutePath);
+
+        await client.Series.FindAsync("b1", "A B");
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/Serie/b1/A%20B", _handler.Last.Uri.AbsolutePath);
+
+        await client.Series.CreateAsync("b1", payload);
+        Assert.Equal(HttpMethod.Post, _handler.Last.Method);
+        Assert.Equal("/Serie/b1", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("""{"Name":"A"}""", _handler.Last.Body);
+
+        await client.Series.UpdateAsync("b1", "A", payload);
+        Assert.Equal(HttpMethod.Put, _handler.Last.Method);
+        Assert.Equal("/Serie/b1/A", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("""{"Name":"A"}""", _handler.Last.Body);
+
+        await client.Series.DeleteAsync("b1", "A");
+        Assert.Equal(HttpMethod.Delete, _handler.Last.Method);
+        Assert.Equal("/Serie/b1/A", _handler.Last.Uri.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task TaxEntityRequests()
+    {
+        using FacturamaClient client = CreateClient();
+        var payload = new { Rfc = "EKU9003173C9" };
+
+        await client.TaxEntity.FindAsync();
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/TaxEntity", _handler.Last.Uri.AbsolutePath);
+
+        await client.TaxEntity.UpdateAsync(payload);
+        Assert.Equal(HttpMethod.Put, _handler.Last.Method);
+        Assert.Equal("/TaxEntity", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("""{"Rfc":"EKU9003173C9"}""", _handler.Last.Body);
+
+        await client.TaxEntity.UploadCsdAsync(payload);
+        Assert.Equal(HttpMethod.Put, _handler.Last.Method);
+        Assert.Equal("/TaxEntity/UploadCsd", _handler.Last.Uri.AbsolutePath);
+
+        await client.TaxEntity.UploadFielAsync(payload);
+        Assert.Equal(HttpMethod.Put, _handler.Last.Method);
+        Assert.Equal("/TaxEntity/UploadFiel", _handler.Last.Uri.AbsolutePath);
+
+        await client.TaxEntity.UploadLogoAsync(new { Image = "aW1n", Type = "png" });
+        Assert.Equal(HttpMethod.Put, _handler.Last.Method);
+        Assert.Equal("/TaxEntity/UploadLogo", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("""{"Image":"aW1n","Type":"png"}""", _handler.Last.Body);
+    }
+
+    [Fact]
+    public async Task TaxEntityUploadCsdFromFilesEncodesTheCertificateAndKey()
+    {
+        using FacturamaClient client = CreateClient();
+        string certificate = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        string privateKey = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+        try
+        {
+            await File.WriteAllTextAsync(certificate, "cer");
+            await File.WriteAllTextAsync(privateKey, "key");
+
+            await client.TaxEntity.UploadCsdFromFilesAsync(certificate, privateKey, "secret");
+
+            Assert.Equal(HttpMethod.Put, _handler.Last.Method);
+            Assert.Equal("/TaxEntity/UploadCsd", _handler.Last.Uri.AbsolutePath);
+            Assert.Equal("""{"Certificate":"Y2Vy","PrivateKey":"a2V5","PrivateKeyPassword":"secret"}""", _handler.Last.Body);
+        }
+        finally
+        {
+            File.Delete(certificate);
+            File.Delete(privateKey);
+        }
+    }
+
+    [Fact]
+    public async Task RetentionsRequests()
+    {
+        using FacturamaClient client = CreateClient();
+
+        await client.Retentions.CreateAsync(new { Serie = "R" });
+        Assert.Equal(HttpMethod.Post, _handler.Last.Method);
+        Assert.Equal("/2/retenciones", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("""{"Serie":"R"}""", _handler.Last.Body);
+
+        await client.Retentions.FindAsync("abc");
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/Retenciones/abc", _handler.Last.Uri.AbsolutePath);
+
+        await client.Retentions.CancelAsync("abc", "02");
+        Assert.Equal(HttpMethod.Delete, _handler.Last.Method);
+        Assert.Equal("/Retenciones/abc", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("?motive=02", _handler.Last.Uri.Query);
+
+        await client.Retentions.CancelAsync("abc", "01", "UUID-1");
+        Assert.Equal("?motive=01&uuidReplacement=UUID-1", _handler.Last.Uri.Query);
+    }
+
+    [Fact]
     public async Task IdsAreEscaped()
     {
         using FacturamaClient client = CreateClient();
@@ -336,14 +485,14 @@ public sealed class ResourcesTests
                 id => client.Products.DeleteAsync(id)));
     }
 
-    private async Task AssertCrudAsync(string collection, string item, Crud crud)
+    private async Task AssertCrudAsync(string collection, string item, Crud crud, string listQuery = "?search=&start=0&length=100")
     {
         var payload = new { Name = "n" };
 
         await crud.List();
         Assert.Equal(HttpMethod.Get, _handler.Last.Method);
         Assert.Equal("/" + collection, _handler.Last.Uri.AbsolutePath);
-        Assert.Equal("?search=&start=0&length=100", _handler.Last.Uri.Query);
+        Assert.Equal(listQuery, _handler.Last.Uri.Query);
 
         await crud.Find("1");
         Assert.Equal(HttpMethod.Get, _handler.Last.Method);
@@ -368,7 +517,7 @@ public sealed class ResourcesTests
 
     private FacturamaClient CreateClient() => new(_handler.CreateHttpClient(), "u", "p");
 
-    /// <summary><c>Clients</c> and <c>Products</c> expose the same CRUD surface; this adapts both to one shape.</summary>
+    /// <summary><c>Clients</c>, <c>Products</c> and <c>BranchOffices</c> expose the same CRUD surface; this adapts both to one shape.</summary>
     private sealed record Crud(
         Func<Task> List,
         Func<string, Task> Find,

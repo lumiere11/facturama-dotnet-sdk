@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Facturama;
@@ -5,6 +6,7 @@ using Facturama.Examples;
 using Facturama.Examples.Multiissuer;
 using Facturama.Examples.Web;
 using Facturama.Exceptions;
+using Facturama.Model.Catalog;
 
 // Runnable examples of the Facturama SDK (CFDI 4.0). The client targets the Sandbox, so no real CFDI is stamped.
 //
@@ -21,16 +23,22 @@ var examples = new SortedDictionary<string, (string Description, Func<FacturamaC
     ["cfdi-list"] = ("List the issued CFDIs", (c, a) => CfdiExamples.ListAsync(c, Arg(a, 0, "0"))),
     ["cfdi-download"] = ("Download a CFDI: <id> [pdf|xml|html]", (c, a) => CfdiExamples.DownloadAsync(c, Arg(a, 0), Arg(a, 1, FileTypes.Pdf))),
     ["cfdi-email"] = ("Send a CFDI by email: <id> <email>", (c, a) => CfdiExamples.SendByEmailAsync(c, Arg(a, 0), Arg(a, 1))),
-    ["cfdi-cancel"] = ("Cancel a CFDI: <id> [motive]", (c, a) => CfdiExamples.CancelAsync(c, Arg(a, 0), Arg(a, 1, "02"))),
+    ["cfdi-cancel"] = ("Cancel a CFDI: <id> [motive]", (c, a) => CfdiExamples.CancelAsync(c, Arg(a, 0), Arg(a, 1, CancellationMotive.ErrorsWithoutRelation.Value))),
+    ["cfdi-get"] = ("Get a CFDI: <id>", (c, a) => c.Cfdis.FindAsync(Arg(a, 0))),
+    ["cfdi-status"] = ("Ask the SAT for the status of a CFDI: <uuid> <issuer-rfc> <receiver-rfc> <total>", (c, a) => c.Cfdis.StatusAsync(Arg(a, 0), Arg(a, 1), Arg(a, 2), decimal.Parse(Arg(a, 3), CultureInfo.InvariantCulture))),
     ["client-crud"] = ("Create, read, update and delete a client", (c, _) => ClientExamples.RunAsync(c)),
     ["product-crud"] = ("Create, read, update and delete a product", (c, _) => ProductExamples.RunAsync(c)),
-    ["branch-list"] = ("List the branch offices", (c, _) => c.GetAsync("api/BranchOffice")),
+    ["branch-list"] = ("List the branch offices", (c, _) => c.BranchOffices.ListAsync()),
+    ["serie-list"] = ("List the series of a branch office: <branch-office-id>", (c, a) => c.Series.ListAsync(Arg(a, 0))),
+    ["profile-get"] = ("Get the fiscal profile", (c, _) => c.TaxEntity.FindAsync()),
+    ["profile-csd-upload"] = ("Upload the account's CSD: <cer-file> <key-file> <key-password>", (c, a) => c.TaxEntity.UploadCsdFromFilesAsync(Arg(a, 0), Arg(a, 1), Arg(a, 2))),
+    ["retention-get"] = ("Get a withholding CFDI: <id>", (c, a) => c.Retentions.FindAsync(Arg(a, 0))),
 
     // Multi-issuer API
     ["multi-cfdi-create"] = ("Stamp a CFDI 4.0 as one of many issuers", (c, _) => MultiissuerExamples.CreateCfdiAsync(c)),
     ["multi-cfdi-get"] = ("Get a CFDI: <id>", (c, a) => c.Multiissuer.Cfdis.FindAsync(Arg(a, 0))),
     ["multi-cfdi-download"] = ("Download a CFDI: <id> [pdf|xml|html]", (c, a) => MultiissuerExamples.DownloadAsync(c, Arg(a, 0), Arg(a, 1, FileTypes.Pdf))),
-    ["multi-cfdi-cancel"] = ("Cancel a CFDI: <id> [motive]", (c, a) => c.Multiissuer.Cfdis.CancelAsync(Arg(a, 0), Arg(a, 1, "02"))),
+    ["multi-cfdi-cancel"] = ("Cancel a CFDI: <id> [motive]", (c, a) => c.Multiissuer.Cfdis.CancelAsync(Arg(a, 0), Arg(a, 1, CancellationMotive.ErrorsWithoutRelation.Value))),
     ["multi-cfdi-list"] = ("List the CFDIs: [keyword]", (c, a) => c.Multiissuer.Cfdis.ListAsync(a.Length > 0 ? new Dictionary<string, object?> { ["keyword"] = a[0] } : null)),
     ["multi-cfdi-email"] = ("Send a CFDI by email: <id> <email>", (c, a) => c.Multiissuer.Cfdis.SendByEmailAsync(Arg(a, 0), Arg(a, 1))),
     ["multi-csd-list"] = ("List the uploaded CSDs", (c, _) => c.Multiissuer.Csds.ListAsync()),

@@ -37,7 +37,7 @@ public sealed class Csds
     /// <param name="cancellationToken">A token to cancel the request.</param>
     /// <returns>The API response.</returns>
     public async Task<JsonNode?> CreateFromFilesAsync(string rfc, string certificatePath, string privateKeyPath, string privateKeyPassword, CancellationToken cancellationToken = default)
-        => await CreateAsync(await ReadAsync(rfc, certificatePath, privateKeyPath, privateKeyPassword, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+        => await CreateAsync(await CsdFiles.ReadAsync(rfc, certificatePath, privateKeyPath, privateKeyPassword, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
 
     /// <summary>Replaces the CSD of an issuer (<c>PUT api-lite/csds/{rfc}</c>).</summary>
     /// <param name="rfc">The issuer's RFC.</param>
@@ -55,7 +55,7 @@ public sealed class Csds
     /// <param name="cancellationToken">A token to cancel the request.</param>
     /// <returns>The API response.</returns>
     public async Task<JsonNode?> UpdateFromFilesAsync(string rfc, string certificatePath, string privateKeyPath, string privateKeyPassword, CancellationToken cancellationToken = default)
-        => await UpdateAsync(rfc, await ReadAsync(rfc, certificatePath, privateKeyPath, privateKeyPassword, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+        => await UpdateAsync(rfc, await CsdFiles.ReadAsync(rfc, certificatePath, privateKeyPath, privateKeyPassword, cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
 
     /// <summary>Deletes the CSD of an issuer (<c>DELETE api-lite/csds/{rfc}</c>).</summary>
     /// <param name="rfc">The issuer's RFC.</param>
@@ -65,13 +65,4 @@ public sealed class Csds
         => _client.DeleteAsync(Path(rfc), cancellationToken: cancellationToken);
 
     private static string Path(string rfc) => $"api-lite/csds/{Uri.EscapeDataString(rfc)}";
-
-    private static async Task<JsonObject> ReadAsync(string rfc, string certificatePath, string privateKeyPath, string privateKeyPassword, CancellationToken cancellationToken)
-        => new()
-        {
-            ["Rfc"] = rfc,
-            ["Certificate"] = Convert.ToBase64String(await File.ReadAllBytesAsync(certificatePath, cancellationToken).ConfigureAwait(false)),
-            ["PrivateKey"] = Convert.ToBase64String(await File.ReadAllBytesAsync(privateKeyPath, cancellationToken).ConfigureAwait(false)),
-            ["PrivateKeyPassword"] = privateKeyPassword,
-        };
 }

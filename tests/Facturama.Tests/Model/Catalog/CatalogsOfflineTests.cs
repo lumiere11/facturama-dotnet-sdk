@@ -18,6 +18,11 @@ public sealed class CatalogsOfflineTests
         [nameof(FederalTax)] = Of<FederalTax, CatalogEntry>(),
         [nameof(PaymentForm)] = Of<PaymentForm, CatalogEntry>(),
         [nameof(PaymentMethod)] = Of<PaymentMethod, CatalogEntry>(),
+        [nameof(FiscalRegime)] = Of<FiscalRegime, CatalogEntry>(),
+        [nameof(CancellationMotive)] = Of<CancellationMotive, CatalogEntry>(),
+        [nameof(TaxObject)] = Of<TaxObject, CatalogEntry>(),
+        [nameof(Exportation)] = Of<Exportation, CatalogEntry>(),
+        [nameof(Periodicity)] = Of<Periodicity, CatalogEntry>(),
     };
 
     public static TheoryData<string> CatalogNames => [.. Catalogs.Keys];
@@ -136,6 +141,31 @@ public sealed class CatalogsOfflineTests
         Assert.Equal("01", PaymentForm.FindByName("Efectivo").Value);
         Assert.Equal("PUE", PaymentMethod.SingleExhibition.Value);
         Assert.Equal("PPD", PaymentMethod.Deferred.Value);
+    }
+
+    [Fact]
+    public void SatCatalogsExposeTheCommonCodes()
+    {
+        Assert.Equal("601", FiscalRegime.GeneralLegalEntities.Value);
+        Assert.Equal("626", FiscalRegime.FindByName("Régimen Simplificado de Confianza").Value);
+        Assert.Equal("02", CancellationMotive.ErrorsWithoutRelation.Value);
+        Assert.Equal(["01", "02", "03", "04"], CancellationMotive.Entries.Select(entry => entry.Value));
+        Assert.Equal("02", TaxObject.Subject.Value);
+        Assert.Equal("01", Exportation.NotApplicable.Value);
+        Assert.Equal("04", Periodicity.Monthly.Value);
+    }
+
+    [Theory]
+    [InlineData(nameof(FiscalRegime))]
+    [InlineData(nameof(CancellationMotive))]
+    [InlineData(nameof(TaxObject))]
+    [InlineData(nameof(Exportation))]
+    [InlineData(nameof(Periodicity))]
+    public void SatCatalogValuesAreUnique(string catalog)
+    {
+        string[] values = [.. Catalogs[catalog].Entries.Select(entry => entry.Value)];
+
+        Assert.Equal(values.Length, values.Distinct(StringComparer.Ordinal).Count());
     }
 
     [Fact]
