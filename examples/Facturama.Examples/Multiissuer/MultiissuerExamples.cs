@@ -79,35 +79,16 @@ internal static class MultiissuerExamples
             PaymentBankName = "BBVA",
         };
 
-        return client.PostAsync("api-lite/3/cfdis", cfdi);
+        return client.Multiissuer.Cfdis.CreateAsync(cfdi);
     }
 
     /// <summary>Downloads an issued (Lite) CFDI and saves it in the current directory.</summary>
     public static async Task<JsonNode?> DownloadAsync(FacturamaClient client, string id, string format)
     {
-        // Multi-issuer CFDIs use the "issuedLite" type, which is not part of ReceiptTypes.
-        JsonNode? file = await client.Cfdis.DownloadAsync(id, format, "issuedLite");
         string path = Path.GetFullPath($"cfdi-{id}.{format}");
-        await File.WriteAllBytesAsync(path, Convert.FromBase64String(file!["Content"]!.GetValue<string>()));
+        await client.Multiissuer.Cfdis.DownloadToFileAsync(id, path, format);
         Console.WriteLine($"Saved {path}");
 
         return null;
-    }
-
-    /// <summary>
-    /// Uploads the CSD of an issuer. Unlike the PHP example (which embeds the base64 inline), this reads the
-    /// <c>.cer</c> and <c>.key</c> files the SAT delivers and base64-encodes them.
-    /// </summary>
-    public static async Task<JsonNode?> UploadCsdAsync(FacturamaClient client, string rfc, string certificatePath, string privateKeyPath, string privateKeyPassword)
-    {
-        var csd = new
-        {
-            Rfc = rfc,
-            Certificate = Convert.ToBase64String(await File.ReadAllBytesAsync(certificatePath)),
-            PrivateKey = Convert.ToBase64String(await File.ReadAllBytesAsync(privateKeyPath)),
-            PrivateKeyPassword = privateKeyPassword,
-        };
-
-        return await client.PostAsync("api-lite/csds", csd);
     }
 }
