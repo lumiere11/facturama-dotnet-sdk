@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Multi-issuer API resources: `client.Multiissuer.Cfdis` (`CreateAsync`, `FindAsync`, `ListAsync`, `DownloadAsync`, `SendByEmailAsync`, `CancelAsync`) and `client.Multiissuer.Csds` (`ListAsync`, `FindAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, plus `CreateFromFilesAsync`/`UpdateFromFilesAsync`, which read and base64-encode the `.cer` and `.key` files).
+- `DownloadBytesAsync()` and `DownloadToFileAsync()` on `Cfdis` and `Multiissuer.Cfdis`: the decoded file instead of the JSON with the base64 `Content`. A response without a valid `Content` raises `ResponseException`.
+- `ReceiptTypes.IssuedLite` (`issuedLite`), the type of the CFDIs issued through the Multi-issuer API.
+
 ## 1.0.0
 
 First release of the .NET SDK: a port of the [Facturama PHP SDK](https://github.com/Facturama/facturama-php-sdk) 3.0.0 to **.NET 10 (LTS)**.

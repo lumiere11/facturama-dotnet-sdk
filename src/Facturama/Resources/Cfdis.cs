@@ -40,6 +40,30 @@ public sealed class Cfdis
     public Task<JsonNode?> DownloadAsync(string id, string format = FileTypes.Pdf, string type = ReceiptTypes.Issued, CancellationToken cancellationToken = default)
         => _client.GetAsync($"cfdi/{Uri.EscapeDataString(format)}/{Uri.EscapeDataString(type)}/{Uri.EscapeDataString(id)}", cancellationToken: cancellationToken);
 
+    /// <summary>Downloads a CFDI and returns the decoded file.</summary>
+    /// <param name="id">The CFDI id.</param>
+    /// <param name="format">One of <see cref="FileTypes"/>; PDF by default.</param>
+    /// <param name="type">One of <see cref="ReceiptTypes"/>; issued by default.</param>
+    /// <param name="cancellationToken">A token to cancel the request.</param>
+    /// <returns>The bytes of the file.</returns>
+    /// <exception cref="Exceptions.ResponseException">The response has no valid base64 <c>Content</c>.</exception>
+    public async Task<byte[]> DownloadBytesAsync(string id, string format = FileTypes.Pdf, string type = ReceiptTypes.Issued, CancellationToken cancellationToken = default)
+        => CfdiFile.Decode(await DownloadAsync(id, format, type, cancellationToken).ConfigureAwait(false));
+
+    /// <summary>Downloads a CFDI and writes it to <paramref name="path"/> (an existing file is overwritten).</summary>
+    /// <param name="id">The CFDI id.</param>
+    /// <param name="path">The file to write.</param>
+    /// <param name="format">One of <see cref="FileTypes"/>; PDF by default.</param>
+    /// <param name="type">One of <see cref="ReceiptTypes"/>; issued by default.</param>
+    /// <param name="cancellationToken">A token to cancel the request.</param>
+    /// <returns>A task that completes when the file is written.</returns>
+    /// <exception cref="Exceptions.ResponseException">The response has no valid base64 <c>Content</c>.</exception>
+    public async Task DownloadToFileAsync(string id, string path, string format = FileTypes.Pdf, string type = ReceiptTypes.Issued, CancellationToken cancellationToken = default)
+    {
+        byte[] content = await DownloadBytesAsync(id, format, type, cancellationToken).ConfigureAwait(false);
+        await File.WriteAllBytesAsync(path, content, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Sends a CFDI by email (<c>POST Cfdi</c>).</summary>
     /// <param name="id">The CFDI id.</param>
     /// <param name="email">The recipient address.</param>

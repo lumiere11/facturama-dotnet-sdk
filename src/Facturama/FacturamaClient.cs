@@ -123,6 +123,9 @@ public sealed class FacturamaClient : IDisposable
     /// <summary>Gets the CRUD operations for the account's products.</summary>
     public Products Products => field ??= new Products(this);
 
+    /// <summary>Gets the Multi-issuer API (<c>api-lite</c>): CFDIs and CSDs of several issuers.</summary>
+    public Multiissuer Multiissuer => field ??= new Multiissuer(this);
+
     /// <summary>Changes the base URL (e.g. <see cref="ProductionUrl"/>).</summary>
     /// <param name="baseUri">The new base URL; a trailing slash is ignored.</param>
     /// <returns>This client, to allow chaining.</returns>

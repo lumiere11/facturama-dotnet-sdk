@@ -6,6 +6,9 @@ public static class ReceiptTypes
     /// <summary>CFDIs issued by the account.</summary>
     public const string Issued = "issued";
 
+    /// <summary>CFDIs issued through the Multi-issuer API.</summary>
+    public const string IssuedLite = "issuedLite";
+
     /// <summary>CFDIs received by the account.</summary>
     public const string Received = "received";
 
