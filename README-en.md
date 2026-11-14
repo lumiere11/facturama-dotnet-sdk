@@ -135,9 +135,9 @@ app.MapPost("/invoices", async (InvoiceRequest request, FacturamaClient facturam
 
 app.MapGet("/invoices/{id}/pdf", async (string id, FacturamaClient facturama, CancellationToken ct) =>
 {
-    var file = await facturama.Cfdis.DownloadAsync(id, FileTypes.Pdf, cancellationToken: ct);
+    byte[] pdf = await facturama.Cfdis.DownloadBytesAsync(id, FileTypes.Pdf, cancellationToken: ct);
 
-    return Results.File(Convert.FromBase64String(file!["Content"]!.GetValue<string>()), "application/pdf");
+    return Results.File(pdf, "application/pdf");
 });
 ```
 
@@ -145,9 +145,11 @@ app.MapGet("/invoices/{id}/pdf", async (string id, FacturamaClient facturama, Ca
 
 | Resource | Methods |
 |---|---|
-| `Cfdis` | `CreateAsync(cfdi)`, `ListAsync(filters)`, `DownloadAsync(id, format, type)`, `SendByEmailAsync(id, email)`, `CancelAsync(id, motive)` |
+| `Cfdis` | `CreateAsync(cfdi)`, `ListAsync(filters)`, `DownloadAsync(id, format, type)`, `DownloadBytesAsync(id, format, type)`, `DownloadToFileAsync(id, path, format, type)`, `SendByEmailAsync(id, email)`, `CancelAsync(id, motive)` |
 | `Clients` | `ListAsync()`, `FindAsync(id)`, `CreateAsync(data)`, `UpdateAsync(id, data)`, `DeleteAsync(id)` |
 | `Products` | `ListAsync()`, `FindAsync(id)`, `CreateAsync(data)`, `UpdateAsync(id, data)`, `DeleteAsync(id)` |
+| `Multiissuer.Cfdis` | `CreateAsync(cfdi)`, `FindAsync(id)`, `ListAsync(filters)`, `DownloadAsync(id, format)`, `DownloadBytesAsync(id, format)`, `DownloadToFileAsync(id, path, format)`, `SendByEmailAsync(id, email)`, `CancelAsync(id, motive)` |
+| `Multiissuer.Csds` | `ListAsync()`, `FindAsync(rfc)`, `CreateAsync(data)`, `CreateFromFilesAsync(rfc, cer, key, password)`, `UpdateAsync(rfc, data)`, `UpdateFromFilesAsync(rfc, cer, key, password)`, `DeleteAsync(rfc)` |
 
 For any other endpoint use the generic `GetAsync()`, `PostAsync()`, `PutAsync()` and `DeleteAsync()` methods, e.g. `facturama.GetAsync("catalogs/CfdiUses")`.
 
@@ -205,8 +207,16 @@ bool naturalOnly = !CfdiUse.FindByValue("CN01").Moral;
 
 ### Operations
 
-- Create, get, cancel CFDIs; download XMLs and PDFs;
-- CRUD for digital sign certificates ("CSD", "Certificados de los Sellos Digitales").
+- Create, get, cancel CFDIs; download XMLs and PDFs and send them by email (`facturama.Multiissuer.Cfdis`);
+- CRUD for digital sign certificates ("CSD", "Certificados de los Sellos Digitales") (`facturama.Multiissuer.Csds`).
+
+```csharp
+// The issuer goes in the CFDI (`Issuer`); its CSD is uploaded only once.
+await facturama.Multiissuer.Csds.CreateFromFilesAsync("EKU9003173C9", "csd.cer", "csd.key", "12345678a");
+
+var cfdi = await facturama.Multiissuer.Cfdis.CreateAsync(new { Issuer = new { Rfc = "EKU9003173C9", /* ... */ }, /* ... */ });
+await facturama.Multiissuer.Cfdis.DownloadToFileAsync(cfdi!["Id"]!.GetValue<string>(), "invoice.pdf");
+```
 
 ## Examples
 

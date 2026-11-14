@@ -28,13 +28,15 @@ var examples = new SortedDictionary<string, (string Description, Func<FacturamaC
 
     // Multi-issuer API
     ["multi-cfdi-create"] = ("Stamp a CFDI 4.0 as one of many issuers", (c, _) => MultiissuerExamples.CreateCfdiAsync(c)),
-    ["multi-cfdi-get"] = ("Get a CFDI: <id>", (c, a) => c.GetAsync($"api-lite/cfdis/{Uri.EscapeDataString(Arg(a, 0))}")),
+    ["multi-cfdi-get"] = ("Get a CFDI: <id>", (c, a) => c.Multiissuer.Cfdis.FindAsync(Arg(a, 0))),
     ["multi-cfdi-download"] = ("Download a CFDI: <id> [pdf|xml|html]", (c, a) => MultiissuerExamples.DownloadAsync(c, Arg(a, 0), Arg(a, 1, FileTypes.Pdf))),
-    ["multi-cfdi-cancel"] = ("Cancel a CFDI: <id> [motive]", (c, a) => c.DeleteAsync($"api-lite/cfdis/{Uri.EscapeDataString(Arg(a, 0))}", new Dictionary<string, object?> { ["type"] = "issuedLite", ["motive"] = Arg(a, 1, "02") })),
-    ["multi-csd-list"] = ("List the uploaded CSDs", (c, _) => c.GetAsync("api-lite/csds")),
-    ["multi-csd-get"] = ("Get the CSD of an RFC: <rfc>", (c, a) => c.GetAsync($"api-lite/csds/{Uri.EscapeDataString(Arg(a, 0))}")),
-    ["multi-csd-upload"] = ("Upload a CSD: <rfc> <cer-file> <key-file> <key-password>", (c, a) => MultiissuerExamples.UploadCsdAsync(c, Arg(a, 0), Arg(a, 1), Arg(a, 2), Arg(a, 3))),
-    ["multi-csd-delete"] = ("Delete the CSD of an RFC: <rfc>", (c, a) => c.DeleteAsync($"api-lite/csds/{Uri.EscapeDataString(Arg(a, 0))}")),
+    ["multi-cfdi-cancel"] = ("Cancel a CFDI: <id> [motive]", (c, a) => c.Multiissuer.Cfdis.CancelAsync(Arg(a, 0), Arg(a, 1, "02"))),
+    ["multi-cfdi-list"] = ("List the CFDIs: [keyword]", (c, a) => c.Multiissuer.Cfdis.ListAsync(a.Length > 0 ? new Dictionary<string, object?> { ["keyword"] = a[0] } : null)),
+    ["multi-cfdi-email"] = ("Send a CFDI by email: <id> <email>", (c, a) => c.Multiissuer.Cfdis.SendByEmailAsync(Arg(a, 0), Arg(a, 1))),
+    ["multi-csd-list"] = ("List the uploaded CSDs", (c, _) => c.Multiissuer.Csds.ListAsync()),
+    ["multi-csd-get"] = ("Get the CSD of an RFC: <rfc>", (c, a) => c.Multiissuer.Csds.FindAsync(Arg(a, 0))),
+    ["multi-csd-upload"] = ("Upload a CSD: <rfc> <cer-file> <key-file> <key-password>", (c, a) => c.Multiissuer.Csds.CreateFromFilesAsync(Arg(a, 0), Arg(a, 1), Arg(a, 2), Arg(a, 3))),
+    ["multi-csd-delete"] = ("Delete the CSD of an RFC: <rfc>", (c, a) => c.Multiissuer.Csds.DeleteAsync(Arg(a, 0))),
 
     // Dependency injection
     ["di"] = ("Resolve the client from the DI container", (_, _) => DependencyInjectionExample.RunAsync()),

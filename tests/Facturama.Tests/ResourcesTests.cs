@@ -1,5 +1,7 @@
 using System.Net;
+using System.Text;
 using System.Web;
+using Facturama.Exceptions;
 using Facturama.Tests.Support;
 
 namespace Facturama.Tests;
@@ -109,6 +111,187 @@ public sealed class ResourcesTests
         await client.Cfdis.CancelAsync("abc", "02");
 
         Assert.Equal("?type=issued&motive=02", _handler.Last.Uri.Query);
+    }
+
+    [Fact]
+    public async Task CfdiDownloadBytesDecodesTheContent()
+    {
+        StubHandler handler = new StubHandler().Enqueue(HttpStatusCode.OK, """{"ContentEncoding":"base64","ContentType":"xml","Content":"PGNmZGkvPg=="}""");
+        using FacturamaClient client = new(handler.CreateHttpClient(), "u", "p");
+
+        byte[] content = await client.Cfdis.DownloadBytesAsync("abc", FileTypes.Xml);
+
+        Assert.Equal("<cfdi/>", Encoding.UTF8.GetString(content));
+        Assert.Equal("/cfdi/xml/issued/abc", handler.Last.Uri.AbsolutePath);
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("""{"Id":"x"}""")]
+    [InlineData("""{"Content":null}""")]
+    [InlineData("""{"Content":5}""")]
+    [InlineData("""{"Content":"not base64!"}""")]
+    public async Task CfdiDownloadBytesRejectsAResponseWithoutContent(string body)
+    {
+        StubHandler handler = new StubHandler().Enqueue(HttpStatusCode.OK, body);
+        using FacturamaClient client = new(handler.CreateHttpClient(), "u", "p");
+
+        await Assert.ThrowsAsync<ResponseException>(() => client.Cfdis.DownloadBytesAsync("abc"));
+    }
+
+    [Fact]
+    public async Task CfdiDownloadToFileWritesTheDecodedContent()
+    {
+        StubHandler handler = new StubHandler().Enqueue(HttpStatusCode.OK, """{"Content":"PGNmZGkvPg=="}""");
+        using FacturamaClient client = new(handler.CreateHttpClient(), "u", "p");
+        string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+        try
+        {
+            await client.Cfdis.DownloadToFileAsync("abc", path, FileTypes.Xml, ReceiptTypes.Received);
+
+            Assert.Equal("<cfdi/>", await File.ReadAllTextAsync(path));
+            Assert.Equal("/cfdi/xml/received/abc", handler.Last.Uri.AbsolutePath);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task MultiissuerCfdiCreateFindAndList()
+    {
+        using FacturamaClient client = CreateClient();
+
+        await client.Multiissuer.Cfdis.CreateAsync(new { CfdiType = "I" });
+        Assert.Equal(HttpMethod.Post, _handler.Last.Method);
+        Assert.Equal("/api-lite/3/cfdis", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("""{"CfdiType":"I"}""", _handler.Last.Body);
+
+        await client.Multiissuer.Cfdis.FindAsync("a/b");
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/api-lite/cfdis/a%2Fb", _handler.Last.Uri.AbsolutePath);
+
+        await client.Multiissuer.Cfdis.ListAsync();
+        Assert.Equal("/api-lite/cfdis", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal(string.Empty, _handler.Last.Uri.Query);
+
+        await client.Multiissuer.Cfdis.ListAsync(new Dictionary<string, object?> { ["keyword"] = "abc" });
+        Assert.Equal("?keyword=abc", _handler.Last.Uri.Query);
+    }
+
+    [Fact]
+    public async Task MultiissuerCfdiDownloadsUseTheIssuedLiteType()
+    {
+        StubHandler handler = StubHandler.Responding(HttpStatusCode.OK, "{}").Enqueue(HttpStatusCode.OK, """{"Content":"PGNmZGkvPg=="}""").Enqueue(HttpStatusCode.OK, """{"Content":"PGNmZGkvPg=="}""");
+        using FacturamaClient client = new(handler.CreateHttpClient(), "u", "p");
+        string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+        await client.Multiissuer.Cfdis.DownloadAsync("abc");
+        Assert.Equal("/cfdi/pdf/issuedLite/abc", handler.Last.Uri.AbsolutePath);
+
+        byte[] content = await client.Multiissuer.Cfdis.DownloadBytesAsync("abc", FileTypes.Xml);
+        Assert.Equal("<cfdi/>", Encoding.UTF8.GetString(content));
+        Assert.Equal("/cfdi/xml/issuedLite/abc", handler.Last.Uri.AbsolutePath);
+
+        try
+        {
+            await client.Multiissuer.Cfdis.DownloadToFileAsync("abc", path, FileTypes.Xml);
+
+            Assert.Equal("<cfdi/>", await File.ReadAllTextAsync(path));
+            Assert.Equal("/cfdi/xml/issuedLite/abc", handler.Last.Uri.AbsolutePath);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public async Task MultiissuerCfdiSendByEmail()
+    {
+        using FacturamaClient client = CreateClient();
+
+        await client.Multiissuer.Cfdis.SendByEmailAsync("abc", "a@b.mx");
+
+        Assert.Equal(HttpMethod.Post, _handler.Last.Method);
+        Assert.Equal("/Cfdi", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("?cfdiType=issuedLite&cfdiId=abc&email=a%40b.mx", _handler.Last.Uri.Query);
+    }
+
+    [Fact]
+    public async Task MultiissuerCfdiCancel()
+    {
+        using FacturamaClient client = CreateClient();
+
+        await client.Multiissuer.Cfdis.CancelAsync("abc", "02");
+        Assert.Equal(HttpMethod.Delete, _handler.Last.Method);
+        Assert.Equal("/api-lite/cfdis/abc", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("?type=issuedLite&motive=02", _handler.Last.Uri.Query);
+
+        await client.Multiissuer.Cfdis.CancelAsync("abc", "01", "UUID-1");
+        Assert.Equal("?type=issuedLite&motive=01&uuidReplacement=UUID-1", _handler.Last.Uri.Query);
+    }
+
+    [Fact]
+    public async Task CsdsCrudRequests()
+    {
+        using FacturamaClient client = CreateClient();
+        var payload = new { Rfc = "EKU9003173C9" };
+
+        await client.Multiissuer.Csds.ListAsync();
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/api-lite/csds", _handler.Last.Uri.AbsolutePath);
+
+        await client.Multiissuer.Csds.FindAsync("EKU9003173C9");
+        Assert.Equal(HttpMethod.Get, _handler.Last.Method);
+        Assert.Equal("/api-lite/csds/EKU9003173C9", _handler.Last.Uri.AbsolutePath);
+
+        await client.Multiissuer.Csds.CreateAsync(payload);
+        Assert.Equal(HttpMethod.Post, _handler.Last.Method);
+        Assert.Equal("/api-lite/csds", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("""{"Rfc":"EKU9003173C9"}""", _handler.Last.Body);
+
+        await client.Multiissuer.Csds.UpdateAsync("EKU9003173C9", payload);
+        Assert.Equal(HttpMethod.Put, _handler.Last.Method);
+        Assert.Equal("/api-lite/csds/EKU9003173C9", _handler.Last.Uri.AbsolutePath);
+        Assert.Equal("""{"Rfc":"EKU9003173C9"}""", _handler.Last.Body);
+
+        await client.Multiissuer.Csds.DeleteAsync("EKU9003173C9");
+        Assert.Equal(HttpMethod.Delete, _handler.Last.Method);
+        Assert.Equal("/api-lite/csds/EKU9003173C9", _handler.Last.Uri.AbsolutePath);
+    }
+
+    [Fact]
+    public async Task CsdsFromFilesEncodeTheCertificateAndKey()
+    {
+        using FacturamaClient client = CreateClient();
+        string certificate = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        string privateKey = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        const string Expected = """{"Rfc":"EKU9003173C9","Certificate":"Y2Vy","PrivateKey":"a2V5","PrivateKeyPassword":"secret"}""";
+
+        try
+        {
+            await File.WriteAllTextAsync(certificate, "cer");
+            await File.WriteAllTextAsync(privateKey, "key");
+
+            await client.Multiissuer.Csds.CreateFromFilesAsync("EKU9003173C9", certificate, privateKey, "secret");
+            Assert.Equal(HttpMethod.Post, _handler.Last.Method);
+            Assert.Equal("/api-lite/csds", _handler.Last.Uri.AbsolutePath);
+            Assert.Equal(Expected, _handler.Last.Body);
+
+            await client.Multiissuer.Csds.UpdateFromFilesAsync("EKU9003173C9", certificate, privateKey, "secret");
+            Assert.Equal(HttpMethod.Put, _handler.Last.Method);
+            Assert.Equal("/api-lite/csds/EKU9003173C9", _handler.Last.Uri.AbsolutePath);
+            Assert.Equal(Expected, _handler.Last.Body);
+        }
+        finally
+        {
+            File.Delete(certificate);
+            File.Delete(privateKey);
+        }
     }
 
     [Fact]

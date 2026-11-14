@@ -158,12 +158,11 @@ internal static class CfdiExamples
     public static Task<JsonNode?> ListAsync(FacturamaClient client, string page)
         => client.Cfdis.ListAsync(new Dictionary<string, object?> { ["status"] = "all", ["page"] = page });
 
-    /// <summary>Downloads a CFDI and saves it next to the executable. The API returns the file base64 encoded in <c>Content</c>.</summary>
+    /// <summary>Downloads a CFDI and saves it in the current directory.</summary>
     public static async Task<JsonNode?> DownloadAsync(FacturamaClient client, string id, string format)
     {
-        JsonNode? file = await client.Cfdis.DownloadAsync(id, format);
         string path = Path.GetFullPath($"cfdi-{id}.{format}");
-        await File.WriteAllBytesAsync(path, Convert.FromBase64String(file!["Content"]!.GetValue<string>()));
+        await client.Cfdis.DownloadToFileAsync(id, path, format);
         Console.WriteLine($"Saved {path}");
 
         return null;
